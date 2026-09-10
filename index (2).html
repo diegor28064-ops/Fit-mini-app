@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#10b981" />
+  <title>FitTools Pro Mini App</title>
+  <link rel="manifest" href="/manifest.json" />
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --primary: #10b981;
+      --primary-hover: #059669;
+      --text-color: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+      --focus: 3px rgba(16,185,129,0.18);
+    }
+
+    [data-theme="cyberpunk"] {
+      --bg-color: #09090b;
+      --card-bg: #18181b;
+      --primary: #f43f5e;
+      --primary-hover: #e11d48;
+      --text-color: #fafafa;
+      --text-muted: #a1a1aa;
+      --border-color: #27272a;
+    }
+
+    [data-theme="monochrome"] {
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --primary: #e5e5e5;
+      --primary-hover: #ffffff;
+      --text-color: #ffffff;
+      --text-muted: #888888;
+      --border-color: #333333;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: var(--bg-color); color: var(--text-color); padding: 15px; padding-bottom: 40px; }
+    .container { max-width: 600px; margin: 0 auto; }
+
+    header { text-align: center; margin-bottom: 20px; position: relative; }
+    h1 { color: var(--primary); font-size: 1.6rem; }
+
+    .theme-select { position: absolute; right: 0; top: 0; background: var(--card-bg); color: var(--text-color); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 6px; }
+
+    nav { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 20px; padding-bottom: 5px; }
+    nav button { background: var(--card-bg); color: var(--text-muted); border: 1px solid var(--border-color); padding: 8px 14px; border-radius: 20px; white-space: nowrap; cursor: pointer; }
+    nav button.active { background: var(--primary); color: #000; font-weight: bold; border-color: var(--primary); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .card { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 15px; border: 1px solid var(--border-color); }
+    .card h2 { font-size: 1.1rem; margin-bottom: 12px; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
+
+    label { display: block; font-size: 0.85rem; color: var(--text-muted); margin: 8px 0 4px; }
+    input, select { width: 100%; padding: 10px; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 8px; outline: none; }
+    input:focus, select:focus, button:focus { box-shadow: var(--focus); outline: none; }
+
+    button.btn-main { width: 100%; background: var(--primary); color: #000; font-weight: bold; border: none; padding: 12px; border-radius: 8px; margin-top: 12px; cursor: pointer; }
+    button.btn-secondary { background: transparent; color: var(--primary); border: 1px solid var(--primary); width: 100%; padding: 8px; border-radius: 8px; margin-top: 8px; cursor: pointer; }
+
+    .result-box { margin-top: 12px; padding: 10px; background: var(--bg-color); border-radius: 8px; font-size: 0.9rem; border: 1px solid var(--border-color); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* Timer Styles */
+    .timer-display { font-size: 2.5rem; text-align: center; font-weight: bold; color: var(--primary); margin: 10px 0; }
+    .timer-btns { display: flex; gap: 8px; justify-content: center; margin-bottom: 10px; }
+    .timer-btns button { padding: 6px 12px; background: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 6px; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
+    th, td { padding: 8px; text-align: center; border-bottom: 1px solid var(--border-color); }
+    th { color: var(--text-muted); }
+
+    .pro-badge { background: #eab308; color: #000; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    .locked { opacity: 0.5; pointer-events: none; }
+
+    .sr-only { position: absolute !important; height: 1px; width: 1px; overflow: hidden; clip: rect(1px, 1px, 1px, 1px); white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <div class="container" role="main">
+    <header>
+      <h1>⚡ FitTools Pro</h1>
+      <label for="theme" class="sr-only">Seleccionar tema</label>
+      <select id="theme" class="theme-select" onchange="changeTheme(this.value)" aria-label="Seleccionar tema">
+        <option value="default">Emerald</option>
+        <option value="cyberpunk">Cyberpunk</option>
+        <option value="monochrome">Monochrome</option>
+      </select>
+    </header>
+
+    <nav role="tablist" aria-label="Secciones">
+      <button type="button" class="active" aria-selected="true" onclick="switchTab(this,'tab-macros')">Macros</button>
+      <button type="button" aria-selected="false" onclick="switchTab(this,'tab-1rm')">1RM &amp; RPE</button>
+      <button type="button" aria-selected="false" onclick="switchTab(this,'tab-timer')">Timer</button>
+      <button type="button" aria-selected="false" onclick="switchTab(this,'tab-agua')">Agua</button>
+      <button type="button" aria-selected="false" onclick="switchTab(this,'tab-pro')">Pro 👑</button>
+    </nav>
+
+    <!-- TAB 1: MACROS -->
+    <div id="tab-macros" class="tab-content active" role="tabpanel" aria-live="polite">
+      <div class="card">
+        <h2>Calculadora TDEE &amp; Macros</h2>
+        <div class="grid-2">
+          <div>
+            <label for="weight">Peso (kg)</label>
+            <input id="weight" type="number" min="30" max="300" step="0.1" placeholder="70">
+          </div>
+          <div>
+            <label for="height">Altura (cm)</label>
+            <input id="height" type="number" min="100" max="250" step="0.1" placeholder="175">
+          </div>
+        </div>
+        <div class="grid-2">
+          <div>
+            <label for="age">Edad</label>
+            <input id="age" type="number" min="10" max="120" step="1" placeholder="25">
+          </div>
+          <div>
+            <label for="goal">Objetivo</label>
+            <select id="goal">
+              <option value="deficit">Déficit (-20%)</option>
+              <option value="mant" selected>Mantenimiento</option>
+              <option value="volume">Volumen (+15%)</option>
+            </select>
+          </div>
+        </div>
+        <button type="button" class="btn-main" onclick="calcMacros()">Calcular Dieta</button>
+        <div id="macro-results" class="result-box" style="display:none;" aria-live="polite"></div>
+        <button id="share-macro" type="button" class="btn-secondary" style="display:none;" onclick="shareResults()">Compartir por WhatsApp</button>
+      </div>
+    </div>
+
+    <!-- TAB 2: 1RM & RPE -->
+    <div id="tab-1rm" class="tab-content" role="tabpanel" aria-live="polite" hidden>
+      <div class="card">
+        <h2>Calculadora de 1RM</h2>
+        <div class="grid-2">
+          <div>
+            <label for="rm-weight">Peso levantado (kg)</label>
+            <input id="rm-weight" type="number" min="1" max="1000" step="0.5" placeholder="100">
+          </div>
+          <div>
+            <label for="rm-reps">Repeticiones</label>
+            <input id="rm-reps" type="number" min="1" max="50" step="1" placeholder="5">
+          </div>
+        </div>
+        <button type="button" class="btn-main" onclick="calc1RM()">Calcular 1RM</button>
+        <div id="rm-result" class="result-box" style="display:none;" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <!-- TAB 3: TIMER -->
+    <div id="tab-timer" class="tab-content" role="tabpanel" aria-live="polite" hidden>
+      <div class="card">
+        <h2>Temporizador de Descanso</h2>
+        <div class="timer-display" id="timer-display" aria-live="polite">01:30</div>
+        <div class="timer-btns">
+          <button type="button" onclick="setTimer(30)">30s</button>
+          <button type="button" onclick="setTimer(60)">60s</button>
+          <button type="button" onclick="setTimer(90)">90s</button>
+          <button type="button" onclick="setTimer(180)">3 min</button>
+        </div>
+        <div class="grid-2">
+          <button type="button" class="btn-main" onclick="startTimer()">Iniciar</button>
+          <button type="button" class="btn-secondary" onclick="resetTimer()">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: TRACKER AGUA -->
+    <div id="tab-agua" class="tab-content" role="tabpanel" aria-live="polite" hidden>
+      <div class="card">
+        <h2>Registro de Agua Diaria</h2>
+        <p style="text-align:center; margin:10px 0;">Consumido: <b id="water-count" style="color:var(--primary)">0</b> / 2500 ml</p>
+        <div class="grid-2">
+          <button type="button" class="btn-main" onclick="addWater(250)">+ 250 ml</button>
+          <button type="button" class="btn-main" onclick="addWater(500)">+ 500 ml</button>
+        </div>
+        <button type="button" class="btn-secondary" onclick="resetWater()">Reiniciar Día</button>
+      </div>
+    </div>
+
+    <!-- TAB 5: MONETIZACIÓN / PRO -->
+    <div id="tab-pro" class="tab-content" role="tabpanel" aria-live="polite" hidden>
+      <div class="card">
+        <h2>Versión Pro <span class="pro-badge">ACTIVACIÓN</span></h2>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:10px;">
+          Ingresa tu código de licencia para desbloquear rutinas avanzadas y exportación de datos.<br>
+          Nota: la verificación real debe realizarse en el servidor; aquí se simula la solicitud.
+        </p>
+        <label for="license-key" class="sr-only">Código de acceso</label>
+        <input type="text" id="license-key" placeholder="Código de acceso">
+        <button type="button" class="btn-main" onclick="activatePro()">Solicitar verificación</button>
+        <div id="pro-status" class="result-box" style="display:none;" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --------- Utility & State ----------
+    function $(id) { return document.getElementById(id); }
+
+    // Restore theme
+    (function() {
+      const t = localStorage.getItem('fit_theme') || 'default';
+      if (t !== 'default') document.documentElement.setAttribute('data-theme', t);
+      if ($('theme')) $('theme').value = t;
+    })();
+
+    function changeTheme(theme) {
+      if (theme === 'default') {
+        document.documentElement.removeAttribute('data-theme');
+      } else {
+        document.documentElement.setAttribute('data-theme', theme);
+      }
+      localStorage.setItem('fit_theme', theme);
+    }
+
+    // Tab switching: expects (buttonElement, tabId)
+    function switchTab(btn, tabId) {
+      document.querySelectorAll('.tab-content').forEach(t => {
+        t.classList.remove('active');
+        t.hidden = true;
+      });
+      document.querySelectorAll('nav button').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected','false');
+      });
+
+      const tab = document.getElementById(tabId);
+      if (tab) {
+        tab.classList.add('active');
+        tab.hidden = false;
+      }
+      if (btn) {
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected','true');
+      }
+    }
+
+    // ------- MACROS -------
+    function calcMacros() {
+      const w = parseFloat($('weight').value);
+      const h = parseFloat($('height').value);
+      const a = parseFloat($('age').value);
+      const goal = $('goal').value;
+
+      if (!w || !h || !a) {
+        alert('Completa todos los campos correctamente.');
+        return;
+      }
+
+      // Mifflin-St Jeor (as default male-ish baseline). If you need sex selection, add input.
+      let bmr = (10 * w) + (6.25 * h) - (5 * a) + 5;
+      let tdee = bmr * 1.375; // actividad moderada
+
+      if (goal === 'deficit') tdee *= 0.8;
+      if (goal === 'volume') tdee *= 1.15;
+
+      const protein = w * 2;
+      const fats = w * 0.9;
+      const carbs = (tdee - (protein * 4) - (fats * 9)) / 4;
+
+      const resultObj = {
+        calories: Math.round(tdee),
+        protein: Math.round(protein),
+        fats: Math.round(fats),
+        carbs: Math.round(carbs),
+        meta: { weight: w, height: h, age: a, goal: goal, timestamp: Date.now() }
+      };
+
+      const resEl = $('macro-results');
+      resEl.style.display = 'block';
+      resEl.innerHTML = `
+        <div><strong>Calorías Diarias:</strong> ${resultObj.calories} kcal</div>
+        <div><strong>Proteínas:</strong> ${resultObj.protein} g &nbsp;|&nbsp; <strong>Grasas:</strong> ${resultObj.fats} g &nbsp;|&nbsp; <strong>Carbos:</strong> ${resultObj.carbs} g</div>
+      `;
+      $('share-macro').style.display = 'block';
+
+      // Save as JSON for reuse
+      try {
+        localStorage.setItem('fit_macros', JSON.stringify(resultObj));
+      } catch (e) {
+        console.warn('No se pudo guardar en localStorage', e);
+      }
+    }
+
+    function shareResults() {
+      const raw = localStorage.getItem('fit_macros');
+      if (!raw) return alert('No hay resultados para compartir. Calcula tus macros primero.');
+      try {
+        const o = JSON.parse(raw);
+        const text = `Mi plan de Macros con FitTools:\nCalorías: ${o.calories} kcal\nProteínas: ${o.protein}g\nGrasas: ${o.fats}g\nCarbohidratos: ${o.carbs}g`;
+        const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+        window.open(url, '_blank');
+      } catch (e) {
+        alert('Error al preparar los datos de compartición.');
+      }
+    }
+
+    // ------- 1RM -------
+    function calc1RM() {
+      const w = parseFloat($('rm-weight').value);
+      const r = parseFloat($('rm-reps').value);
+      if (!w || !r) return alert('Ingresa peso y repeticiones');
+
+      const rm = w * (1 + (r / 30)); // Epley
+      const res = $('rm-result');
+      res.style.display = 'block';
+
+      let tableHTML = `<div><strong>Tu 1RM Estimado: ${Math.round(rm)} kg</strong></div><table><thead><tr><th>%</th><th>Peso</th></tr></thead><tbody>`;
+      [95, 90, 85, 80, 75, 70].forEach(p => {
+        tableHTML += `<tr><td>${p}%</td><td>${Math.round(rm * (p/100))} kg</td></tr>`;
+      });
+      tableHTML += '</tbody></table>';
+      res.innerHTML = tableHTML;
+    }
+
+    // ------- TIMER -------
+    let timerInterval = null;
+    let timeLeft = 90;
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60).toString().padStart(2, '0');
+      const s = (sec % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function updateTimerDisplay() {
+      $('timer-display').innerText = formatTime(timeLeft);
+    }
+
+    function setTimer(sec) {
+      timeLeft = sec;
+      updateTimerDisplay();
+    }
+
+    async function startTimer() {
+      clearInterval(timerInterval);
+      if (Notification && Notification.permission !== 'granted') {
+        try { await Notification.requestPermission(); } catch(e){/* ignore */ }
+      }
+
+      timerInterval = setInterval(() => {
+        if (timeLeft > 0) {
+          timeLeft--;
+          updateTimerDisplay();
+        } else {
+          clearInterval(timerInterval);
+          // Vibrate if available
+          if (navigator.vibrate) navigator.vibrate([200,100,200]);
+          // Notification if permission
+          if (Notification && Notification.permission === 'granted') {
+            new Notification('FitTools', { body: '¡Tiempo de descanso terminado!' });
+          } else {
+            alert('¡Tiempo de descanso terminado!');
+          }
+        }
+      }, 1000);
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      timeLeft = 90;
+      updateTimerDisplay();
+    }
+
+    // Initialize timer display on load
+    updateTimerDisplay();
+
+    // ------- WATER TRACKER -------
+    const WATER_GOAL = 2500;
+
+    function loadWater() {
+      try {
+        const data = JSON.parse(localStorage.getItem('fit_water_v2') || '{}');
+        const today = new Date().toISOString().slice(0,10);
+        if (!data.date || data.date !== today) {
+          // reset day
+          localStorage.setItem('fit_water_v2', JSON.stringify({ amount: 0, date: today }));
+          return 0;
+        }
+        return +data.amount || 0;
+      } catch (e) {
+        return 0;
+      }
+    }
+
+    let water = loadWater();
+    $('water-count').innerText = `${water} ml`;
+
+    function saveWater() {
+      const today = new Date().toISOString().slice(0,10);
+      localStorage.setItem('fit_water_v2', JSON.stringify({ amount: water, date: today }));
+    }
+
+    function addWater(amount) {
+      water += amount;
+      if (water < 0) water = 0;
+      saveWater();
+      $('water-count').innerText = `${water} ml`;
+    }
+
+    function resetWater() {
+      water = 0;
+      saveWater();
+      $('water-count').innerText = `${water} ml`;
+      alert('Registro de agua reiniciado para hoy.');
+    }
+
+    // ------- PRO Activation (client-side simulation) -------
+    function activatePro() {
+      const key = $('license-key').value.trim();
+      const status = $('pro-status');
+      status.style.display = 'block';
+      if (!key) {
+        status.style.color = '#ef4444';
+        status.innerText = 'Ingresa un código de licencia válido.';
+        return;
+      }
+
+      // NOTE: This is a client-side simulation. Real verification must occur on a server.
+      // Save a request object in localStorage so the server (or later sync) can verify it.
+      const req = { key: key, timestamp: Date.now(), status: 'pending' };
+      try {
+        localStorage.setItem('fit_pro_request', JSON.stringify(req));
+      } catch (e) {
+        console.warn('No se pudo guardar la solicitud en localStorage', e);
+      }
+
+      status.style.color = 'var(--primary)';
+      status.innerText = 'Solicitud enviada (simulada). La verificación debe realizarse en el servidor. Si tienes un backend, envía aquí el código para verificar y activar la cuenta.';
+    }
+
+    // ------- PWA: service worker registration -------
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then(reg => {
+        console.log('SW registrado', reg.scope);
+      }).catch(err => {
+        console.warn('Error registrando SW:', err);
+      });
+    }
+
+    // Optional: on load show previously computed macros
+    (function restoreMacrosAndPro() {
+      try {
+        const raw = localStorage.getItem('fit_macros');
+        if (raw) {
+          const o = JSON.parse(raw);
+          $('macro-results').style.display = 'block';
+          $('macro-results').innerHTML = `
+            <div><strong>Calorías Diarias:</strong> ${o.calories} kcal</div>
+            <div><strong>Proteínas:</strong> ${o.protein} g &nbsp;|&nbsp; <strong>Grasas:</strong> ${o.fats} g &nbsp;|&nbsp; <strong>Carbos:</strong> ${o.carbs} g</div>
+          `;
+          $('share-macro').style.display = 'block';
+        }
+        const proReq = localStorage.getItem('fit_pro_request');
+        if (proReq) {
+          const rep = JSON.parse(proReq);
+          $('pro-status').style.display = 'block';
+          $('pro-status').style.color = 'var(--primary)';
+          $('pro-status').innerText = `Solicitud de Pro: ${rep.status} (enviada el ${new Date(rep.timestamp).toLocaleString()})`;
+        }
+      } catch (e) { /* ignore parse errors */ }
+    })();
+
+  </script>
+</body>
+</html>
